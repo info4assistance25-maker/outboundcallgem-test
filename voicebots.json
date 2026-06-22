@@ -1,0 +1,26 @@
+[
+  {
+    "id": "vb1",
+    "nome": "Voicebot Sondaggio",
+    "exten": 8000,
+    "context": "outbound-voicebot",
+    "descrizione": "Sondaggio clienti standard",
+    "attivo": false
+  },
+  {
+    "id": "vb1781276133025",
+    "nome": "Demo Rossi Moto",
+    "exten": 8001,
+    "context": "outbound-voicebot",
+    "descrizione": "",
+    "attivo": false
+  },
+  {
+    "id": "vb1781535510904",
+    "nome": "Demo Cossinia",
+    "exten": 8002,
+    "context": "outbound-voicebot",
+    "descrizione": "",
+    "attivo": true
+  }
+]
