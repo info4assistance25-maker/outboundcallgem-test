@@ -399,8 +399,12 @@ export function CampaignProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      const WEBHOOK_URL = campaignType === 'appuntamenti'
+        ? 'https://hook.eu1.make.com/9f7h1ebgktojphmiulyqte4ux7f3tjqv'
+        : 'https://hook.eu1.make.com/ac3icgiyh1nbvvh463w33qh58uenvfgo';
+
       const results = await Promise.all(chunks.map((chunk, idx) =>
-        fetch('https://hook.eu1.make.com/ac3icgiyh1nbvvh463w33qh58uenvfgo', {
+        fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
