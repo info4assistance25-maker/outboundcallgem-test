@@ -92,29 +92,46 @@ export function Step1Upload() {
     reader.onload = (e) => {
       try {
         if (!e.target?.result) return;
-        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+        // Use raw:true to get raw Excel values (serial numbers) for proper date/time handling
+        const wb = XLSX.read(e.target.result, { type: 'array', raw: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: '', raw: false, dateNF: 'dd/mm/yyyy' });
+        const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: '', raw: true });
         const out = [];
 
+        // Convert Excel serial date number to dd/mm/yyyy
+        // Excel epoch: Jan 1, 1900 = serial 1 (with leap year bug: serial 60 = Feb 29, 1900 which didn't exist)
+        const excelSerialToDate = (serial: number): string => {
+          const excelEpoch = new Date(1899, 11, 30); // Dec 30, 1899
+          const date = new Date(excelEpoch.getTime() + serial * 86400000);
+          const dd = String(date.getDate()).padStart(2, '0');
+          const mm = String(date.getMonth() + 1).padStart(2, '0');
+          const yyyy = date.getFullYear();
+          return `${dd}/${mm}/${yyyy}`;
+        };
+
         const formatDate = (val: any): string => {
-          if (!val) return '';
-          const s = String(val).trim();
+          if (!val && val !== 0) return '';
           // Already formatted as dd/mm/yyyy
+          const s = String(val).trim();
           if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
-          // Try parsing as date
+          // Excel serial number (integer)
+          const num = parseFloat(s);
+          if (!isNaN(num) && num > 40000 && num < 60000) {
+            return excelSerialToDate(Math.floor(num));
+          }
+          // Try JS Date parsing as fallback
           const d = new Date(s);
           if (!isNaN(d.getTime())) {
-            const dd = String(d.getDate()).padStart(2, '0');
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const yyyy = d.getFullYear();
+            const dd = String(d.getUTCDate()).padStart(2, '0');
+            const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const yyyy = d.getUTCFullYear();
             return `${dd}/${mm}/${yyyy}`;
           }
           return s;
         };
 
         const formatTime = (val: any): string => {
-          if (!val) return '';
+          if (!val && val !== 0) return '';
           const s = String(val).trim();
           // Already formatted as HH:MM
           if (/^\d{1,2}:\d{2}$/.test(s)) return s.padStart(5, '0');
