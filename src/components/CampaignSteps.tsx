@@ -92,15 +92,48 @@ export function Step1Upload() {
     reader.onload = (e) => {
       try {
         if (!e.target?.result) return;
-        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: '' });
+        const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: '', raw: false, dateNF: 'dd/mm/yyyy' });
         const out = [];
+
+        const formatDate = (val: any): string => {
+          if (!val) return '';
+          const s = String(val).trim();
+          // Already formatted as dd/mm/yyyy
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+          // Try parsing as date
+          const d = new Date(s);
+          if (!isNaN(d.getTime())) {
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+          }
+          return s;
+        };
+
+        const formatTime = (val: any): string => {
+          if (!val) return '';
+          const s = String(val).trim();
+          // Already formatted as HH:MM
+          if (/^\d{1,2}:\d{2}$/.test(s)) return s.padStart(5, '0');
+          // Excel fractional time (0.4166... = 10:00)
+          const num = parseFloat(s);
+          if (!isNaN(num) && num >= 0 && num < 1) {
+            const totalMinutes = Math.round(num * 24 * 60);
+            const hh = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+            const mm = String(totalMinutes % 60).padStart(2, '0');
+            return `${hh}:${mm}`;
+          }
+          return s;
+        };
+
         for (const row of rows) {
           const nome = String(row[0] || '').trim();
           const numero = String(row[1] || '').trim();
-          const data = String(row[2] || '').trim();
-          const ora = String(row[3] || '').trim();
+          const data = formatDate(row[2]);
+          const ora = formatTime(row[3]);
           if (!nome || !numero) continue;
           if (['nome', 'name'].includes(nome.toLowerCase())) continue;
           out.push({ id: crypto.randomUUID(), nome, numero, data_appuntamento: data, ora_appuntamento: ora });
